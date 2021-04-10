@@ -1,0 +1,2 @@
+# Check_vm
+使用PowerCli来获取VMware虚拟平台的信息，并通过python整合数据
