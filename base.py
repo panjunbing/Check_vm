@@ -4,9 +4,9 @@ import subprocess
 import glob
 import pandas
 import datetime
+import urwid
+import xlwt
 
-
-# import xlrw
 
 # 获取配置文件
 def get_ini(list_ip, list_username, list_passwd):
@@ -112,25 +112,49 @@ def merge_csv(data_paths):
     return data_dt
 
 
-# 写入excel
+# 将Dataframe转为excel
 def merge_excel(name, list_dt, sheet_list):
     """
     :param name: 输出excel的文件名
-    :param list_csv: 合并后的csv文件
+    :param list_dt: 合并后的dataframe
     :param sheet_list: 工作表名称
     :return:
     """
-    # 设置时间
+    # 清除原有格式
+    pandas.io.formats.excel.header_style = None
+    # 文件路径
     date = datetime.datetime.now()
     file_name = name + str(date.year) + '年' + str(date.month) + '月' + str(date.day) + '日.xlsx'
     # dataframe转excel
-    write = pandas.ExcelWriter(file_name)
+    writer = pandas.ExcelWriter(file_name)
     for i in range(len(list_dt)):
-        list_dt[i].to_excel(write, sheet_name=sheet_list[i])
-    write.save()
+        list_dt[i].to_excel(writer, sheet_name=sheet_list[i], index=False)
+    # 设置格式
+    workbook = writer.book
+
+    # 设置格式
+    format = workbook.add_format({'border': 1, 'align': 'center'})
+
+    # 对每个单元格设置格式
+    for i in range(len(sheet_list)):
+        worksheet = writer.sheets[sheet_list[i]]
+        for j, col in enumerate(list_dt[i].columns):
+            # 获取内容的宽度
+            column_len = list_dt[i][col].astype(str).str.len().max()
+            # 获取标题的宽度
+            title_len = get_str_width(col)
+            # 取内容宽度和标题宽度的最大值+2作为单元格的最大值
+            column_len = max(column_len, title_len) + 2
+            worksheet.set_column(j, j, width=column_len, cell_format=format)
+    writer.save()
     return None
 
 
-# 设置excel格式
-def set_excel(excel_path):
-    return None
+# 获取字符串的宽度
+def get_str_width(str):
+    from urwid.old_str_util import get_width
+    width = 0
+    for i in str:
+        # 循环获取单个字符的宽度
+        width += get_width(ord(i))
+    return width
